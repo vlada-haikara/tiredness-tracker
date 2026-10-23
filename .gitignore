@@ -1,0 +1,10 @@
+# Local tool settings (contain paths from this computer)
+.claude/
+
+# Exports of real entries, in case one is ever saved into this folder
+tiredness-log-*.pdf
+tiredness-log-*.csv
+*.csv
+
+# Case study text is kept locally, not published
+portfolio/case-study.md

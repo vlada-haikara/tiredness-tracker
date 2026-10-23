@@ -1,0 +1,146 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tiredness Log mockups</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap">
+<style>
+  /* Renders portfolio images of the real app. ?view=<name> picks the composition.
+     Each phone is an iframe of ../tiredness-log.html filled with made-up sample data. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font-family: "Urbanist", system-ui, sans-serif; overflow: hidden; }
+  .stage { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; gap: var(--gap, 80px); }
+  .stage.light { background: #e7e7e3; }
+  .stage.dark { background: #0d0f0e; }
+  .stage.split { background: linear-gradient(90deg, #0d0f0e 50%, #e7e7e3 50%); }
+  /* simple drawn device: dark body, screen inset, small camera dot — no brand hardware */
+  .phone { --s: 1; width: calc(414px * var(--s)); height: calc(906px * var(--s)); padding: calc(12px * var(--s));
+    border-radius: calc(58px * var(--s)); background: #121413;
+    box-shadow: 0 calc(40px * var(--s)) calc(80px * var(--s)) calc(-30px * var(--s)) rgba(0,0,0,.45), inset 0 0 0 calc(2px * var(--s)) #2a2e2c;
+    position: relative; flex: none; }
+  .phone::after { content: ""; position: absolute; top: calc(24px * var(--s)); left: 50%; width: calc(14px * var(--s)); height: calc(14px * var(--s));
+    margin-left: calc(-7px * var(--s)); border-radius: 50%; background: #050605; z-index: 3; }
+  .screen { width: 100%; height: 100%; border-radius: calc(46px * var(--s)); overflow: hidden; position: relative; background: #000; }
+  .screen iframe { width: 390px; height: 844px; border: 0; transform: scale(var(--s)); transform-origin: 0 0; position: absolute; left: 0; top: calc(38px * var(--s)); }
+  /* status bar strip so the camera never covers app content */
+  .status { position: absolute; inset: 0 0 auto 0; height: calc(38px * var(--s)); display: flex; align-items: center; justify-content: space-between;
+    padding: calc(6px * var(--s)) calc(30px * var(--s)) 0; font: 600 calc(13px * var(--s)) "Urbanist", system-ui, sans-serif; letter-spacing: .01em; }
+  .status.light { background: #ecece9; color: #111312; } .status.dark { background: #0c0e0d; color: #eef2ee; }
+  .status i { display: inline-block; width: calc(22px * var(--s)); height: calc(10px * var(--s)); border-radius: calc(3px * var(--s)); border: calc(1.5px * var(--s)) solid currentColor; opacity: .85; position: relative; }
+  .status i::after { content: ""; position: absolute; inset: calc(1.5px * var(--s)); right: calc(5px * var(--s)); background: currentColor; border-radius: 1px; }
+  .raw iframe { width: 100vw; height: 100vh; border: 0; display: block; }
+  .pdf { background: #fff; box-shadow: 0 30px 70px -30px rgba(0,0,0,.45); width: 1000px; }
+  .pdf img { width: 100%; display: block; }
+</style>
+<body>
+<script>
+// ---- made-up sample week (not anyone's real entries) ----
+const D = new Date();
+const at = (daysAgo, h, m) => new Date(D.getFullYear(), D.getMonth(), D.getDate() - daysAgo, h, m).getTime();
+const S = [
+  // daysAgo, h, m, level, place, feelings, did, next
+  [6, 8, 20, 3, "Home", [], "Slept 8 hours, slow breakfast", "Walk to work"],
+  [6, 13, 10, 5, "Outside", [], "Morning meetings, short lunch", "Water and a short break"],
+  [6, 19, 40, 7, "Metro", ["Heavy head"], "Crowded ride home", "Shower, early dinner"],
+  [5, 9, 0, 4, "Home", [], "Woke up twice at night", "Coffee, plan the day"],
+  [5, 15, 30, 6, "Outside", ["Heavy blanket on top"], "Errands in the city", "Sit down for 20 minutes"],
+  [4, 8, 45, 2, "Home", [], "Weekend, slept in", "Long walk in the park"],
+  [4, 17, 0, 3, "Outside", [], "Park with a friend", "Read a book"],
+  [3, 10, 15, 5, "Shop", [], "Groceries for the week", "Cook something simple"],
+  [3, 21, 0, 8, "Home", ["Heavy blanket on top", "Heavy head"], "Late call, screen all evening", "Phone away, sleep before 23:00"],
+  [2, 8, 30, 6, "Metro", ["Heavy head"], "Short night, rushed morning", "Lunch away from the desk"],
+  [2, 14, 0, 7, "Outside", ["Heavy blanket on top"], "Back-to-back meetings", "Ten minutes outside"],
+  [2, 19, 30, 5, "Home", [], "Quiet dinner", "Stretch, early night"],
+  [1, 9, 10, 3, "Home", [], "Good sleep", "Gym after work"],
+  [1, 18, 20, 4, "Outside", [], "Gym, then walk home", "Light dinner"],
+  [0, 8, 10, 3, "Home", [], "Slept well, calm morning", "Walk to the station"],
+  [0, 12, 40, 5, "Metro", ["Heavy head"], "Long meeting, skipped a break", "Lunch outside"],
+  [0, 16, 20, 6, "Outside", ["Heavy blanket on top"], "Errands after work", "Tea and a short rest"],
+  [0, 20, 30, 4, "Home", [], "Cooked dinner, felt better", "Read, sleep early"],
+].filter(([d, h, m]) => at(d, h, m) < Date.now());
+localStorage.setItem("tiredness-entries", JSON.stringify(S.map(([d, h, m, level, place, feels, did, next]) =>
+  ({ id: String(at(d, h, m)), ts: at(d, h, m), level, place, feels, did, next }))));
+localStorage.setItem("look", "light");
+
+// ---- states: what each phone shows ----
+const STATES = {
+  "checkin-light": { look: "light", pick: 6, feels: ["Heavy head"], place: "Metro", did: "Long meeting, skipped a break" },
+  "checkin-dark":  { look: "dark",  pick: 7, feels: ["Heavy blanket on top"], place: "Outside" },
+  "checkin-empty-light": { look: "light" },
+  "today-light":   { look: "light", scrollTo: "#todayList" },
+  "today-dark":    { look: "dark", scrollTo: "#todayList" },
+  "insights-light":{ look: "light", page: "insights" },
+  "insights-dark": { look: "dark", page: "insights" },
+  "breakdown-dark":{ look: "dark", page: "insights", scrollTo: "#h-time", offset: -24 },
+  "history-light": { look: "light", page: "insights", scrollTo: "#list", offset: -70, open: 1 },
+  "edit-dark":     { look: "dark", edit: true },
+};
+const VIEWS = {
+  "hero":           { stage: "light", gap: 70, phones: [["insights-dark", .95], ["checkin-light", 1.08], ["today-light", .95]] },
+  "hero-dark":      { stage: "dark",  gap: 70, phones: [["insights-light", .95], ["checkin-dark", 1.08], ["breakdown-dark", .95]] },
+  "pair-checkin":   { stage: "split", gap: 160, phones: [["checkin-dark", 1], ["checkin-light", 1]] },
+  "pair-insights":  { stage: "split", gap: 160, phones: [["insights-dark", 1], ["insights-light", 1]] },
+  "trio-flow":      { stage: "light", gap: 60, phones: [["checkin-empty-light", .95], ["checkin-light", .95], ["today-light", .95]] },
+  "trio-insights":  { stage: "dark", gap: 60, phones: [["insights-dark", .95], ["breakdown-dark", .95], ["edit-dark", .95]] },
+};
+
+async function apply(win, st) {
+  const doc = win.document, $ = (q) => doc.querySelector(q);
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+  try { await doc.fonts.ready; } catch {}
+  await wait(400);
+  const style = doc.createElement("style"); style.textContent = "#storeNote{display:none!important} *{transition:none!important}"; doc.head.appendChild(style);
+  const isLight = () => win.getComputedStyle(doc.documentElement).colorScheme.includes("light");
+  if ((st.look === "light") !== isLight()) $("#themeToggle").click();
+  if (st.page === "insights") $("#tab-insights").click();
+  if (st.pick) $("#lvl" + st.pick).click();
+  for (const f of st.feels || []) [...doc.querySelectorAll("#feels button")].find(b => b.textContent === f)?.click();
+  if (st.place) [...doc.querySelectorAll("#places button")].find(b => b.textContent.trim() === st.place)?.click();
+  if (st.did) $("#did").value = st.did;
+  if (st.edit) { $("#todayList .entry .edit").click(); await wait(100); win.scrollTo(0, 0); }
+  if (st.open) { const d = doc.querySelectorAll(".day-fold")[st.open]; if (d) d.open = true; }
+  await wait(150);
+  if (st.scrollTo) { const el = $(st.scrollTo); win.scrollTo(0, el.getBoundingClientRect().top + win.scrollY + (st.offset || -12)); }
+  await wait(150);
+}
+function frame(state, scale, raw) {
+  const ifr = document.createElement("iframe");
+  ifr.src = "../tiredness-log.html?" + state;
+  ifr.addEventListener("load", () => apply(ifr.contentWindow, STATES[state]));
+  if (raw) return ifr;
+  const ph = document.createElement("div"); ph.className = "phone"; ph.style.setProperty("--s", scale);
+  const sc = document.createElement("div"); sc.className = "screen"; sc.style.setProperty("--s", scale);
+  const bar = document.createElement("div"); bar.className = "status " + STATES[state].look; bar.innerHTML = "<span>09:41</span><i></i>";
+  sc.append(bar, ifr); ph.appendChild(sc); return ph;
+}
+
+const q = new URLSearchParams(location.search), view = q.get("view") || "hero";
+if (view.startsWith("raw-")) {
+  // plain screen, no frame: open with a 390×844 window
+  const wrap = document.createElement("div"); wrap.className = "raw"; wrap.appendChild(frame(view.slice(4), 1, true)); document.body.appendChild(wrap);
+} else if (view.startsWith("phone-")) {
+  const stage = document.createElement("div"); stage.className = "stage " + (view.includes("dark") || view.includes("breakdown") || view.includes("edit") ? "dark" : "light");
+  stage.appendChild(frame(view.slice(6), 1.6)); document.body.appendChild(stage);
+} else if (view === "pdf") {
+  // first page of the real PDF export, drawn by the app itself
+  const stage = document.createElement("div"); stage.className = "stage light"; document.body.appendChild(stage);
+  const ifr = document.createElement("iframe"); ifr.src = "../tiredness-log.html?pdf"; ifr.style.cssText = "position:absolute;left:-2000px;width:390px;height:844px;border:0";
+  document.body.appendChild(ifr);
+  ifr.addEventListener("load", async () => {
+    const w = ifr.contentWindow; let first = null;
+    const orig = w.HTMLCanvasElement.prototype.toDataURL;
+    w.HTMLCanvasElement.prototype.toDataURL = function (...a) { const u = orig.apply(this, a); if (!first && this.width === 1240) first = u; return u; };
+    w.HTMLAnchorElement.prototype.click = function () {};
+    try { await w.document.fonts.ready; } catch {}
+    await new Promise(r => setTimeout(r, 600));
+    w.document.getElementById("exportToggle").click(); w.document.getElementById("exportPdf").click();
+    const t0 = Date.now(); while (!first && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 100));
+    const box = document.createElement("div"); box.className = "pdf"; const img = new Image(); img.src = first; box.appendChild(img); stage.appendChild(box);
+  });
+} else {
+  const v = VIEWS[view], stage = document.createElement("div");
+  stage.className = "stage " + v.stage; stage.style.setProperty("--gap", v.gap + "px");
+  for (const [state, scale] of v.phones) stage.appendChild(frame(state, scale));
+  document.body.appendChild(stage);
+}
+</script>
+</body>

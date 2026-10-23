@@ -1,0 +1,1308 @@
+<title>Tiredness Log</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700;800&display=swap">
+<style>
+/* Layout: one phone-width column, dark dashboard (light version below). Greeting + thin headline, two summary tiles (forest "Today", graphite "This week"),
+   the check-in card, then the history. Lime is the single accent; the 1–10 colors only ever mean tiredness. Dark is the default; light follows the phone's setting or the sun/moon button. */
+:root {
+  color-scheme: dark;
+  --bg: #0c0e0d;
+  --card: #151817;          /* cards */
+  --card-solid: #1c201e;    /* inputs, chips, buttons on cards */
+  --raised: #232826;
+  --forest: #22332a;        /* the "Today" tile */
+  --forest-ink: #cfe3d4;
+  --line: rgba(236,244,238,.08);
+  --fg: #eef2ee;
+  --muted: #9ca59f;
+  --accent: #d5f35f;        /* lime */
+  --accent-ink: #141711;
+  --accent-soft: rgba(213,243,95,.12);
+  --accent-fg: #d5f35f;     /* accent used as text, icons, lines and focus rings */
+  --digit: var(--c);        /* number color on the 1–10 tiles */
+  --tab-bg: var(--raised);
+  --tab-ink: var(--muted);
+  --tab-on: var(--accent);
+  --tab-on-ink: var(--accent-ink);
+  --tab-shadow: none;
+  --danger: #ff8f84;
+  /* scale 1 → 10: calm mint to worn-out coral */
+  --s1:#7fd6b0; --s2:#97d8a3; --s3:#b6da93; --s4:#d3d98a; --s5:#ead182;
+  --s6:#f2bd7c; --s7:#f3a678; --s8:#f08f78; --s9:#e8777e; --s10:#da6188;
+  --font: "Urbanist", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]):not([data-look="dark"]) {
+  color-scheme: light;
+  --bg: #ecece9;
+  --card: #ffffff;
+  --card-solid: #f2f2ef;
+  --raised: #ffffff;
+  --forest: #26392d;
+  --forest-ink: #d6e8da;
+  --line: rgba(17,19,18,.10);
+  --fg: #111312;
+  --muted: #5e6360;
+  --accent: #d5f35f;
+  --accent-ink: #141711;
+  --accent-soft: rgba(110,140,10,.12);
+  --accent-fg: #1b1e1c;
+  --tab-bg: #ffffff;
+  --tab-ink: #3d423f;
+  --tab-on: #111312;
+  --tab-on-ink: #ffffff;
+  --tab-shadow: 0 0 0 1px rgba(17,19,18,.05), 0 2px 12px rgba(17,19,18,.14), 0 14px 34px -6px rgba(17,19,18,.30);
+  --danger: #c2413a;
+  --digit: color-mix(in srgb, var(--c) 55%, #1b1f1c);
+  }
+}
+:root[data-theme="light"]:not([data-look="dark"]), :root[data-look="light"] {
+  color-scheme: light;
+  --bg: #ecece9;
+  --card: #ffffff;
+  --card-solid: #f2f2ef;
+  --raised: #ffffff;
+  --forest: #26392d;
+  --forest-ink: #d6e8da;
+  --line: rgba(17,19,18,.10);
+  --fg: #111312;
+  --muted: #5e6360;
+  --accent: #d5f35f;
+  --accent-ink: #141711;
+  --accent-soft: rgba(110,140,10,.12);
+  --accent-fg: #1b1e1c;
+  --tab-bg: #ffffff;
+  --tab-ink: #3d423f;
+  --tab-on: #111312;
+  --tab-on-ink: #ffffff;
+  --tab-shadow: 0 1px 3px rgba(17,19,18,.10), 0 12px 32px -6px rgba(17,19,18,.28);
+  --danger: #c2413a;
+  --digit: color-mix(in srgb, var(--c) 55%, #1b1f1c);
+}
+.icon-btn .sun { display: none; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 480px; margin: 0 auto;
+  padding-inline: 16px; padding-block: 18px 48px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+/* ---- header ---- */
+header { display: flex; align-items: center; gap: 12px; position: relative; z-index: 3; }
+.mark { width: 40px; height: 24px; flex: none; color: var(--accent-fg); }
+.logo {
+  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center;
+}
+.logo svg { width: 20px; height: 20px; }
+.brand { line-height: 1.15; }
+.brand b { display: block; font-size: 16px; font-weight: 700; }
+.brand span { font-size: 12.5px; color: var(--muted); }
+.export-wrap { position: relative; flex: none; }
+#themeToggle { margin-left: auto; }
+.icon-btn {
+  appearance: none; border: 0; cursor: pointer;
+  width: 42px; height: 42px; border-radius: 50%;
+  background: var(--card-solid); color: var(--fg);
+  display: grid; place-items: center;
+}
+.icon-btn svg { width: 19px; height: 19px; }
+.icon-btn[aria-expanded="true"] { background: var(--accent); color: var(--accent-ink); }
+.icon-btn:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 3px; }
+.export-card {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 5;
+  width: min(280px, calc(100vw - 32px)); padding: 16px;
+  background: var(--raised);
+}
+.export-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.export { display: flex; gap: 8px; }
+.export .chip { flex: 1; justify-content: center; }
+
+/* ---- greeting + headline ---- */
+.hello { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.pill-note { font-size: 15px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+h1 {
+  margin: 0; font-size: 36px; line-height: 1.08; font-weight: 300; letter-spacing: -.025em;
+  text-wrap: balance;
+}
+h1 span { display: block; color: var(--muted); }
+
+/* ---- summary tiles ---- */
+.summary { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.tile-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 600; }
+.tile-head .tagline { font-size: 12.5px; font-weight: 500; opacity: .75; white-space: nowrap; }
+.today { background: var(--forest); color: var(--forest-ink); }
+.today-day { display: flex; flex-direction: column; gap: 8px; background: var(--card); border-radius: 18px; padding: 14px 12px 10px; }
+.day-fold { display: flex; flex-direction: column; gap: 10px; }
+.day-fold > summary { list-style: none; cursor: pointer; border-radius: 12px; }
+.day-fold > summary::-webkit-details-marker { display: none; }
+.day-fold > summary .day { padding-right: 26px; position: relative; }
+.day-fold > summary .day::after { content: ""; position: absolute; right: 8px; top: 50%; width: 8px; height: 8px; margin-top: -6px;
+  border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); }
+.day-fold[open] > summary .day::after { margin-top: -2px; transform: rotate(-135deg); }
+.day-fold > summary:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+.day-fold + .day-fold { margin-top: 6px; }
+.today-day .day { padding-top: 0; margin-top: 0; }
+.today-day .hempty { margin: 4px 4px; }
+.today-row { display: flex; align-items: center; gap: 16px; }
+.today-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.today .strip:empty { display: none; }
+.today .strip span { background: rgba(255,255,255,.07); color: var(--forest-ink); }
+.big { font-size: 46px; line-height: 1; font-weight: 300; letter-spacing: -.03em; color: #fff; font-variant-numeric: tabular-nums; }
+.big small { font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--forest-ink); opacity: .7; margin-left: 4px; }
+.meter { position: relative; height: 6px; border-radius: 6px; background: rgba(255,255,255,.10); }
+.meter i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; background: var(--accent); }
+.meter b { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; }
+.tile-foot { font-size: 13.5px; opacity: .85; }
+.week { background: var(--card); }
+.week .big { color: var(--fg); font-size: 34px; }
+.week .big small { color: var(--muted); }
+.week-label { margin-top: 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.tile-head { min-height: 26px; }
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; align-items: end; height: 64px; }
+.bar { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+.bar i { width: 8px; border-radius: 6px; background: var(--c, rgba(255,255,255,.12)); min-height: 4px; }
+.bar span { font-size: 12.5px; font-weight: 600; color: var(--muted); line-height: 1; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; }
+.bar.now span { color: var(--fg); font-weight: 800; }
+@media (max-width: 340px) { .summary { grid-template-columns: 1fr; } }
+
+/* ---- cards ---- */
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 20px 18px;
+}
+.card-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 2px; }
+.card-title h2 { font-size: 19px; }
+form { display: flex; flex-direction: column; gap: 16px; }
+.question { margin: 0 0 -4px; font-size: 32px; line-height: 1.08; font-weight: 300; letter-spacing: -.025em; }
+.question span { display: block; color: var(--muted); }
+.ask { margin: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
+.ask em { font-style: normal; font-weight: 500; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.label { font-size: 15px; font-weight: 600; color: var(--fg); display: flex; justify-content: space-between; align-items: baseline; }
+.label em { font-style: normal; font-weight: 500; color: var(--muted); font-size: 14px; }
+
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+.scale button {
+  appearance: none; border: 0; cursor: pointer;
+  min-height: 74px; border-radius: 10px; padding: 12px 2px 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 5px;
+  font: 500 22px/1 var(--font); font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  background: var(--card-solid);
+  position: relative;
+  transition: transform .12s ease, box-shadow .15s ease, background .15s ease;
+}
+/* each number keeps its tiredness color: tinted tile, colored digit; full color when chosen */
+.scale button:not([aria-pressed="true"]) { background: color-mix(in srgb, var(--c) 14%, var(--card-solid)); }
+.scale button:not([aria-pressed="true"]) .n { color: var(--digit); }
+.scale .nm { font-size: 11px; font-weight: 600; line-height: 1.15; text-align: center; color: var(--muted); text-wrap: balance; }
+.scale button[aria-pressed="true"] .nm { color: #141711; }
+.scale button:active { transform: scale(.94); }
+.scale button[aria-pressed="true"] {
+  background: var(--c); color: #141711; font-weight: 700;
+}
+.scale button:focus-visible, .btn:focus-visible, textarea:focus-visible, .entry button:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+
+textarea {
+  width: 100%; margin-top: 8px; min-height: 48px; resize: vertical; field-sizing: content; max-height: 160px;
+  border: 0; border-radius: 10px; padding: 14px 16px;
+  font: 500 15px/1.45 var(--font); color: var(--fg);
+  background: var(--card-solid);
+}
+textarea::placeholder { color: var(--muted); }
+textarea:focus { outline: none; box-shadow: inset 0 0 0 1.5px var(--accent-fg); }
+
+.btn {
+  appearance: none; border: 0; cursor: pointer;
+  height: 56px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink);
+  font: 700 16px var(--font);
+  transition: transform .12s ease, opacity .15s ease;
+}
+.btn:active { transform: scale(.98); }
+#save:not(:disabled) { background: var(--save, var(--accent)); color: #141711; }
+.btn:disabled { background: var(--card-solid); color: var(--muted); cursor: default; }
+.hint { margin: -8px 0 0; text-align: center; font-size: 13px; color: var(--muted); }
+.hint:empty { display: none; }
+.hint.ok { color: var(--accent-fg); font-weight: 600; }
+.hint.err { color: var(--danger); }
+
+/* ---- history ---- */
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+h2 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.01em; }
+.stat { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stat b { color: var(--fg); }
+
+.list { display: flex; flex-direction: column; gap: 10px; }
+.day {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 4px 4px 2px; margin-top: 22px;
+}
+.day:first-child { margin-top: 0; }
+.day-name { font-size: 16px; font-weight: 700; color: var(--fg); }
+.day-avg {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.day-avg b {
+  min-width: 36px; height: 26px; padding: 0 8px; border-radius: 999px; background: var(--c);
+  display: grid; place-items: center; color: #141711; font-size: 13px; font-weight: 800;
+}
+.day-avg .energy { color: var(--fg); font-weight: 600; font-size: 12px; }
+.day-chart { display: block; width: 100%; height: 110px; }
+.entry {
+  display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: start;
+  background: var(--card); border-radius: 14px; padding: 14px;
+}
+.num {
+  width: 56px; height: 56px; border-radius: 10px; background: var(--c);
+  display: grid; place-items: center;
+  font: 700 24px/1 var(--font); color: #141711; font-variant-numeric: tabular-nums;
+}
+.lvl { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.num-label { font-size: 12.5px; line-height: 1.2; font-weight: 600; text-align: center; color: var(--muted); }
+.body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.meta { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.meta b { color: var(--fg); font-weight: 700; }
+.meta .edit { margin-left: auto; }
+.field { margin: 4px 0 0; font-size: 15px; overflow-wrap: anywhere; white-space: pre-wrap; }
+.field small { display: block; font-size: 13.5px; font-weight: 500; color: var(--muted); margin-bottom: 1px; }
+.field.none { color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.feel-text { font-size: 14px; color: var(--fg); opacity: .8; }
+.tags { align-items: center; column-gap: 12px; }
+.tag { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-fg); }
+.tag.place { display: inline-flex; align-items: center; gap: 5px; background: none; padding-left: 0; color: var(--fg); }
+.tag.place svg { width: 12px; height: 12px; color: var(--accent-fg); }
+.entry.is-editing { box-shadow: inset 0 0 0 1.5px var(--accent-fg); }
+.entry button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  color: var(--muted); font: 600 13px var(--font); padding: 12px 8px; margin: -12px 0; border-radius: 10px;
+}
+.entry button.really { color: var(--danger); background: rgba(255,143,132,.12); }
+
+/* ---- chips ---- */
+.feels { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.feel {
+  display: inline-flex; align-items: stretch; border-radius: 999px; overflow: hidden;
+  background: var(--card-solid);
+}
+.feel button {
+  appearance: none; border: 0; background: transparent; cursor: pointer; color: var(--fg);
+  font: 600 13px var(--font); padding: 8px 10px; min-height: 38px;
+}
+.feel .x { padding: 0 12px 0 2px; color: var(--muted); font-size: 16px; }
+.feel.on { background: var(--accent); }
+.feel.on button { color: var(--accent-ink); }
+.feel.on .x { color: rgba(20,23,17,.6); }
+.feel button:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: -2px; border-radius: 999px; }
+.feel.add { background: var(--card-solid); }
+.feel.add button { color: var(--accent-fg); width: 38px; height: 38px; padding: 0; display: grid; place-items: center; }
+.feel.add svg { width: 16px; height: 16px; display: block; }
+.feel button.with-icon { display: inline-flex; align-items: center; gap: 5px; padding-left: 9px; }
+.feel button.with-icon svg { width: 15px; height: 15px; flex: none; color: var(--accent-fg); }
+.feel.on button.with-icon svg { color: currentColor; }
+.add-feel { display: flex; gap: 8px; margin-top: 10px; }
+.add-feel input {
+  flex: 1; min-width: 0; height: 42px; border: 0; border-radius: 999px; padding: 0 16px;
+  font: 500 15px var(--font); color: var(--fg); background: var(--card-solid); box-shadow: inset 0 0 0 1.5px var(--accent-fg);
+}
+.add-feel input:focus { outline: none; }
+.add-feel .chip { height: 42px; }
+
+.editing {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 16px;
+  background: var(--accent-soft); color: var(--accent-fg); font-size: 13px; font-weight: 600;
+}
+.link { appearance: none; border: 0; background: transparent; cursor: pointer; margin-left: auto; color: var(--accent-fg); font: 700 13px var(--font); text-decoration: underline; padding: 4px; }
+
+.chip {
+  appearance: none; border: 0; cursor: pointer;
+  height: 36px; padding: 0 16px; border-radius: 999px;
+  background: var(--accent); color: var(--accent-ink);
+  font: 700 13px var(--font);
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.chip:active { transform: scale(.96); }
+.chip:disabled { opacity: .35; cursor: default; }
+.chip:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+.empty { text-align: center; padding: 28px 16px; color: var(--muted); }
+.empty b { display: block; color: var(--fg); font-size: 16px; margin-bottom: 4px; }
+.note { font-size: 12px; color: var(--muted); text-align: center; }
+
+/* ---- two pages + tab bar ---- */
+.page { display: flex; flex-direction: column; gap: 18px; }
+.wrap { padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+.tabbar {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 10;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex; gap: 4px; padding: 5px; border-radius: 999px; background: var(--tab-bg); box-shadow: var(--tab-shadow);
+}
+.tabbar button {
+  appearance: none; border: 0; cursor: pointer; background: transparent; color: var(--tab-ink);
+  height: 46px; padding: 0 18px; border-radius: 999px;
+  display: inline-flex; align-items: center; gap: 7px; font: 600 14.5px var(--font); white-space: nowrap;
+}
+.tabbar svg { width: 18px; height: 18px; }
+.tabbar button[aria-current="page"] { background: var(--tab-on); color: var(--tab-on-ink); }
+.tabbar button:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 2px; }
+
+/* Save sits at the end of the form; once a number is picked it follows you while you scroll the optional details */
+.save-wrap { display: flex; flex-direction: column; gap: 8px; margin: 0 -6px -6px; padding: 6px; border-radius: 34px; background: var(--card); }
+.save-wrap:has(.btn:not(:disabled)) { position: sticky; bottom: calc(76px + env(safe-area-inset-bottom, 0px)); z-index: 2; }
+.save-wrap .hint { margin: 0 0 4px; }
+
+/* today so far, under the form */
+.today-strip h2 { font-size: 16px; margin-bottom: 10px; }
+.strip { display: flex; flex-wrap: wrap; gap: 8px; text-align: left; font: inherit; color: inherit; }
+.strip span { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 5px; border-radius: 999px; background: var(--card); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.strip span b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--c); color: #141711; font-size: 13px; }
+.strip:focus-visible { outline: 2px solid var(--accent-fg); outline-offset: 4px; border-radius: 12px; }
+
+/* insight rows: label · bar · value */
+.insight { display: flex; flex-direction: column; gap: 14px; }
+.insight-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.insight-head h2 { font-size: 18px; }
+.insight-head span { font-size: 13px; color: var(--muted); }
+.hrows { display: flex; flex-direction: column; gap: 12px; }
+.hrow { display: grid; grid-template-columns: minmax(0, 9em) 1fr 3.2em; align-items: center; gap: 10px; font-size: 14px; }
+.hrow > span { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.hrow small { display: block; font-size: 13px; color: var(--muted); }
+.hbar { height: 10px; border-radius: 6px; background: var(--card-solid); overflow: hidden; }
+.hbar i { display: block; height: 100%; border-radius: 6px; background: var(--c, var(--accent)); }
+.hrow b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.hempty { color: var(--muted); font-size: 14px; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+
+<main class="wrap">
+  <header>
+    <svg class="mark" viewBox="0 0 40 24" aria-hidden="true"><path d="M3 18 13 14 21 6 29 11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M29 11h8" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="1 4.5"/><circle cx="21" cy="6" r="2.8" fill="currentColor"/></svg>
+    <div class="brand"><b>Tiredness Log</b><span><span id="nowDate">Today</span> · <span id="nowTime">--:--</span></span></div>
+    <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch to light look">
+      <svg class="moon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.6 14.7A8.6 8.6 0 1 1 9.3 3.4a7 7 0 0 0 11.3 11.3z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1.5v3M12 19.5v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1.5 12h3M19.5 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="export-wrap" id="exportBar">
+      <button class="icon-btn" id="exportToggle" type="button" aria-label="Export entries" aria-expanded="false" aria-controls="exportMenu">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11 3h2v9.2l3.3-3.3 1.4 1.4L12 16l-5.7-5.7 1.4-1.4 3.3 3.3z"/><rect x="4" y="18.5" width="16" height="2.5" rx="1.25"/></svg>
+      </button>
+      <div class="card export-card" id="exportMenu" hidden>
+        <div class="export-title">Export all entries</div>
+        <div class="export">
+          <button class="chip" id="exportPdf" type="button" disabled>PDF report</button>
+          <button class="chip" id="exportCsv" type="button" disabled>CSV backup</button>
+        </div>
+        <p class="hint" id="exportHint" aria-live="polite" style="margin:10px 0 0;text-align:left"></p>
+      </div>
+    </div>
+  </header>
+
+  <div class="page" id="page-checkin">
+    <h1 class="question">How tired are you<span>right now?</span></h1>
+  <section class="card" aria-label="New entry" id="formCard">
+    <form id="form" autocomplete="off">
+      <div class="editing" id="editBanner" hidden>
+        <span id="editText">Editing entry</span>
+        <button type="button" class="link" id="cancelEdit">Cancel</button>
+      </div>
+      <div>
+        <div class="label">Tiredness <em id="levelText">Pick 1–10</em></div>
+        <div class="scale" id="scale" role="group" aria-label="Tiredness from 1 to 10"></div>
+      </div>
+      <div>
+        <div class="label">How does it feel?</div>
+        <div class="feels" id="feels" role="group" aria-label="How does it feel"></div>
+        <div class="add-feel" id="addFeelRow" hidden>
+          <input id="newFeel" type="text" maxlength="60" placeholder="Describe the feeling…" aria-label="Your own feeling">
+          <button type="button" class="chip" id="addFeelBtn">Add</button>
+        </div>
+      </div>
+      <div>
+        <label class="label" for="did">What I did</label>
+        <textarea id="did" placeholder="Slept badly, long meeting, skipped lunch…" maxlength="2000"></textarea>
+      </div>
+      <div>
+        <label class="label" for="next">What I plan to do next</label>
+        <textarea id="next" placeholder="Short walk, early night, glass of water…" maxlength="2000"></textarea>
+      </div>
+      <div>
+        <div class="label">Where am I?</div>
+        <div class="feels" id="places" role="group" aria-label="Where am I"></div>
+        <div class="add-feel" id="addPlaceRow" hidden>
+          <input id="newPlace" type="text" maxlength="40" placeholder="Name the place…" aria-label="Your own place">
+          <button type="button" class="chip" id="addPlaceBtn">Add</button>
+        </div>
+      </div>
+      <div class="save-wrap">
+        <button class="btn" id="save" type="submit" disabled>Pick a number to save</button>
+        <p class="hint" id="hint" aria-live="polite"></p>
+      </div>
+    </form>
+  </section>
+
+    <section class="list-wrap" aria-label="Today">
+      <div class="list" id="todayList"></div>
+    </section>
+
+  </div>
+
+  <div class="page" id="page-insights" hidden>
+    <div class="hello">
+      <h1 id="headline">How are you<span>feeling right now?</span></h1>
+    </div>
+
+  <section class="summary" aria-label="Summary">
+    <div class="tile today">
+      <div class="tile-head">Today <span class="tagline" id="todayCount">No check-ins</span></div>
+      <div class="big" id="todayAvg">–<small>/10</small></div>
+      <div class="meter" aria-hidden="true"><i id="todayFill" style="width:0"></i><b id="todayKnob" hidden></b></div>
+      <div class="tile-foot" id="todayFoot">No check-ins yet today</div>
+    </div>
+    <div class="tile week">
+      <div class="tile-head">This week</div>
+      <div class="big" id="weekAvg">–<small>avg</small></div>
+      <div class="bars" id="weekBars" role="img" aria-label="Daily averages for the last 7 days"></div>
+    </div>
+  </section>
+
+    <section class="card insight" aria-labelledby="h-time">
+      <div class="insight-head"><h2 id="h-time">Time of day</h2><span>last 7 days</span></div>
+      <div class="hrows" id="byTime"></div>
+    </section>
+
+    <section class="card insight" aria-labelledby="h-place">
+      <div class="insight-head"><h2 id="h-place">Places</h2><span>last 7 days</span></div>
+      <div class="hrows" id="byPlace"></div>
+    </section>
+
+    <section class="card insight" aria-labelledby="h-feel">
+      <div class="insight-head"><h2 id="h-feel">Feelings</h2><span>last 7 days</span></div>
+      <div class="hrows" id="byFeel"></div>
+    </section>
+
+  <section class="list-wrap" aria-label="Past entries">
+    <div class="section-head">
+      <h2>Past entries</h2>
+      <span class="stat" id="stat"></span>
+    </div>
+    <div class="list" id="list" style="margin-top:12px">
+      <div class="empty"><b>No entries yet</b>Your saved check-ins will show up here, newest first.</div>
+    </div>
+  </section>
+  </div>
+
+  <p class="note" id="storeNote"></p>
+</main>
+
+<nav class="tabbar" aria-label="Pages">
+  <button type="button" id="tab-checkin" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1.1 5.5h-2.2v3.4H7.5v2.2h3.4v3.4h2.2v-3.4h3.4v-2.2h-3.4z"/></svg>Check in
+  </button>
+  <button type="button" id="tab-insights">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3.5" y="12" width="4.5" height="8.5" rx="1.5"/><rect x="9.75" y="4" width="4.5" height="16.5" rx="1.5"/><rect x="16" y="8.5" width="4.5" height="12" rx="1.5"/></svg>Insights
+  </button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(() => {
+  document.documentElement.lang = "en";
+  const LABELS = ["", "Full of energy", "Energetic", "Fresh", "Good", "Okay", "A bit low", "Tired", "Very tired", "Drained", "Exhausted"];
+  const $ = (id) => document.getElementById(id);
+  const DEFAULT_FEELS = ["Heavy blanket on top", "Heavy head"];
+  const DEFAULT_PLACES = ["Home", "Metro", "Outside", "Shop"];
+  const ico = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+  const icoF = (d) => `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${d}</svg>`;
+  const PLACE_ICONS = {
+    Home: icoF('<path d="M12 2.8 2.6 10.3a1 1 0 0 0 .6 1.8H5V20a1 1 0 0 0 1 1h3.8v-5.6h4.4V21H18a1 1 0 0 0 1-1v-7.9h1.8a1 1 0 0 0 .6-1.8z"/>'),
+    Metro: icoF('<path fill-rule="evenodd" d="M8.5 2.5h7A3.5 3.5 0 0 1 19 6v8a3.5 3.5 0 0 1-3.5 3.5h-7A3.5 3.5 0 0 1 5 14V6a3.5 3.5 0 0 1 3.5-3.5zM7.2 6.2v3.6h9.6V6.2a1.4 1.4 0 0 0-1.4-1.4H8.6a1.4 1.4 0 0 0-1.4 1.4zM9 15.3a1.3 1.3 0 1 0 0-2.6 1.3 1.3 0 0 0 0 2.6zm6 0a1.3 1.3 0 1 0 0-2.6 1.3 1.3 0 0 0 0 2.6z"/><path d="m8.2 21.5 1.8-3.6M15.8 21.5 14 17.9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'),
+    Outside: icoF('<path d="M12 2 5 11.2h3.4L4 17.8h16l-4.4-6.6H19z"/><rect x="10.8" y="16.5" width="2.4" height="5.5" rx="1.2"/>'),
+    Shop: icoF('<path fill-rule="evenodd" d="M7.8 7.5V7a4.2 4.2 0 0 1 8.4 0v.5h2.5a1 1 0 0 1 1 1.1l-1.2 11.6a1 1 0 0 1-1 .9H6.5a1 1 0 0 1-1-.9L4.3 8.6a1 1 0 0 1 1-1.1zm2.2 0h4V7a2 2 0 0 0-4 0z"/>'),
+  };
+  const PIN_ICON = icoF('<path fill-rule="evenodd" d="M12 22.5s-7.8-6.6-7.8-12.4a7.8 7.8 0 0 1 15.6 0c0 5.8-7.8 12.4-7.8 12.4zm0-9.3a3.1 3.1 0 1 0 0-6.2 3.1 3.1 0 0 0 0 6.2z"/>');
+  const PLUS_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  let customPlaces = [];      // the user's own places
+  let place = "";             // place chosen in the form (one at a time)
+  const scaleEl = $("scale"), saveBtn = $("save"), didEl = $("did"), nextEl = $("next"), hint = $("hint");
+  let level = 0;
+  let entries = [];
+  let store = null;           // { add(e), update(id, e), remove(id), saveSettings() }
+  let confirmId = null;
+  let editingId = null;
+  let customFeels = [];       // the user's own feeling options
+  let picked = new Set();     // feelings chosen in the form
+  // older entries had one "reason" field; it becomes "What I did"
+  const norm = (e) => ({ ...e, did: e.did ?? e.reason ?? "", next: e.next ?? "", feels: Array.isArray(e.feels) ? e.feels : [], place: typeof e.place === "string" ? e.place : "" });
+  // options added with "+" are for the current entry only: they are saved in that entry, then cleared from the form
+  const saveSettings = () => {};
+
+  // ---- clock ----
+  // European format: 24-hour clock, day before month
+  const LOC = "en-GB";
+  const fmtTime = (d) => d.toLocaleTimeString(LOC, { hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const fmtDate = (d) => d.toLocaleDateString(LOC, { weekday: "short", day: "numeric", month: "short" });
+  const fmtNumDate = (d) => d.toLocaleDateString(LOC, { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, ".");
+  function tick() {
+    const d = new Date(), h = d.getHours();
+    $("nowTime").textContent = fmtTime(d);
+    $("nowDate").textContent = d.toLocaleDateString(LOC, { weekday: "long", day: "numeric", month: "long" });
+  }
+  tick(); setInterval(tick, 15000);
+
+  // ---- scale ----
+  for (let i = 1; i <= 10; i++) {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = "lvl" + i;
+    const bn = document.createElement("span"); bn.className = "n"; bn.textContent = i;
+    const bl = document.createElement("span"); bl.className = "nm"; bl.textContent = LABELS[i];
+    b.append(bn, bl);
+    b.style.setProperty("--c", `var(--s${i})`);
+    b.setAttribute("aria-pressed", "false");
+    b.setAttribute("aria-label", `${i}, ${LABELS[i]}`);
+    b.addEventListener("click", () => setLevel(i));
+    scaleEl.appendChild(b);
+  }
+  function setLevel(i) {
+    level = i;
+    scaleEl.querySelectorAll("button").forEach((b, k) => b.setAttribute("aria-pressed", String(k + 1 === i)));
+    $("levelText").textContent = i ? `${i} · ${LABELS[i]}` : "Pick 1–10";
+    saveBtn.disabled = !store || !i;
+    if (i) saveBtn.style.setProperty("--save", `var(--s${i})`); else saveBtn.style.removeProperty("--save");
+    updateSaveLabel();
+    hint.textContent = ""; hint.className = "hint";
+  }
+  function updateSaveLabel() {
+    saveBtn.textContent = !level ? "Pick a number to save"
+      : editingId ? `Update entry · ${level} ${LABELS[level]}`
+      : `Save · ${level} ${LABELS[level]}`;
+  }
+
+  // ---- feelings ----
+  function renderFeels() {
+    const box = $("feels"); box.textContent = "";
+    const options = [...DEFAULT_FEELS, ...customFeels];
+    for (const f of picked) if (!options.includes(f)) options.push(f);   // e.g. a removed option on an entry being edited
+    for (const f of options) {
+      const wrap = document.createElement("span");
+      wrap.className = "feel" + (picked.has(f) ? " on" : "");
+      const b = document.createElement("button"); b.type = "button"; b.textContent = f;
+      b.setAttribute("aria-pressed", String(picked.has(f)));
+      b.addEventListener("click", () => { picked.has(f) ? picked.delete(f) : picked.add(f); renderFeels(); });
+      wrap.appendChild(b);
+      if (customFeels.includes(f)) {
+        const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×";
+        x.setAttribute("aria-label", `Remove option "${f}"`);
+        x.addEventListener("click", () => {
+          customFeels = customFeels.filter(c => c !== f); picked.delete(f);
+          renderFeels(); saveSettings();
+        });
+        wrap.appendChild(x);
+      }
+      box.appendChild(wrap);
+    }
+    const add = document.createElement("span"); add.className = "feel add";
+    const ab = document.createElement("button"); ab.type = "button"; ab.innerHTML = PLUS_SVG;
+    ab.setAttribute("aria-label", "Add your own feeling");
+    ab.addEventListener("click", () => { const r = $("addFeelRow"); r.hidden = !r.hidden; if (!r.hidden) $("newFeel").focus(); });
+    add.appendChild(ab); box.appendChild(add);
+  }
+  function addFeel() {
+    const v = $("newFeel").value.trim().replace(/\s+/g, " ");
+    if (!v) { $("addFeelRow").hidden = true; return; }
+    const exists = [...DEFAULT_FEELS, ...customFeels].find(f => f.toLowerCase() === v.toLowerCase());
+    if (exists) picked.add(exists);
+    else { customFeels = [...customFeels, v]; picked.add(v); saveSettings(); }
+    $("newFeel").value = ""; $("addFeelRow").hidden = true;
+    renderFeels();
+  }
+  $("addFeelBtn").addEventListener("click", addFeel);
+  $("newFeel").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); addFeel(); }
+    if (ev.key === "Escape") { $("newFeel").value = ""; $("addFeelRow").hidden = true; }
+  });
+  renderFeels();
+
+  // ---- place (one choice; tap again to clear) ----
+  function renderPlaces() {
+    const box = $("places"); box.textContent = "";
+    const options = [...DEFAULT_PLACES, ...customPlaces];
+    if (place && !options.includes(place)) options.push(place);
+    for (const p of options) {
+      const wrap = document.createElement("span");
+      wrap.className = "feel" + (place === p ? " on" : "");
+      const b = document.createElement("button"); b.type = "button";
+      if (PLACE_ICONS[p]) { b.innerHTML = PLACE_ICONS[p]; b.classList.add("with-icon"); }
+      b.append(p);
+      b.setAttribute("aria-pressed", String(place === p));
+      b.addEventListener("click", () => { place = place === p ? "" : p; renderPlaces(); });
+      wrap.appendChild(b);
+      if (customPlaces.includes(p)) {
+        const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×";
+        x.setAttribute("aria-label", `Remove place "${p}"`);
+        x.addEventListener("click", () => {
+          customPlaces = customPlaces.filter(c => c !== p); if (place === p) place = "";
+          renderPlaces(); saveSettings();
+        });
+        wrap.appendChild(x);
+      }
+      box.appendChild(wrap);
+    }
+    const add = document.createElement("span"); add.className = "feel add";
+    const ab = document.createElement("button"); ab.type = "button"; ab.innerHTML = PLUS_SVG;
+    ab.setAttribute("aria-label", "Add your own place");
+    ab.addEventListener("click", () => { const r = $("addPlaceRow"); r.hidden = !r.hidden; if (!r.hidden) $("newPlace").focus(); });
+    add.appendChild(ab); box.appendChild(add);
+  }
+  function addPlace() {
+    const v = $("newPlace").value.trim().replace(/\s+/g, " ");
+    if (!v) { $("addPlaceRow").hidden = true; return; }
+    const exists = [...DEFAULT_PLACES, ...customPlaces].find(p => p.toLowerCase() === v.toLowerCase());
+    if (exists) place = exists;
+    else { customPlaces = [...customPlaces, v]; place = v; saveSettings(); }
+    $("newPlace").value = ""; $("addPlaceRow").hidden = true;
+    renderPlaces();
+  }
+  $("addPlaceBtn").addEventListener("click", addPlace);
+  $("newPlace").addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { ev.preventDefault(); addPlace(); }
+    if (ev.key === "Escape") { $("newPlace").value = ""; $("addPlaceRow").hidden = true; }
+  });
+  renderPlaces();
+
+  // ---- pages ----
+  function setPage(p) {
+    for (const name of ["checkin", "insights"]) {
+      $("page-" + name).hidden = name !== p;
+      if (name === p) $("tab-" + name).setAttribute("aria-current", "page"); else $("tab-" + name).removeAttribute("aria-current");
+    }
+    scrollTo(0, 0);
+    render();   // charts on a hidden page have no width, so draw them once the page is visible
+  }
+  $("tab-checkin").addEventListener("click", () => setPage("checkin"));
+  $("tab-insights").addEventListener("click", () => setPage("insights"));
+
+  // ---- form state ----
+  function resetForm() {
+    editingId = null;
+    setLevel(0);
+    customFeels = []; customPlaces = [];
+    picked = new Set(); renderFeels();
+    place = ""; renderPlaces();
+    for (const [row, input] of [["addFeelRow", "newFeel"], ["addPlaceRow", "newPlace"]]) { $(row).hidden = true; $(input).value = ""; }
+    didEl.value = ""; nextEl.value = "";
+    $("editBanner").hidden = true;
+    updateSaveLabel();
+  }
+  function startEdit(e) {
+    editingId = e.id;
+    setPage("checkin");
+    setLevel(e.level);
+    picked = new Set(e.feels); renderFeels();
+    place = e.place; renderPlaces();
+    didEl.value = e.did; nextEl.value = e.next;
+    const d = new Date(e.ts);
+    $("editText").textContent = `Editing entry from ${fmtNumDate(d)} · ${fmtTime(d)}`;
+    $("editBanner").hidden = false;
+    updateSaveLabel();
+    render();
+    $("formCard").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }
+  $("cancelEdit").addEventListener("click", () => { resetForm(); render(); });
+
+  // ---- list ----
+  function dayKey(ts) { const d = new Date(ts); return d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); }
+  function dayLabel(ts) {
+    const k = dayKey(ts), now = Date.now();
+    if (k === dayKey(now)) return "Today";
+    if (k === dayKey(now - 864e5)) return "Yesterday";
+    return new Date(ts).toLocaleDateString(LOC, { weekday: "long", day: "numeric", month: "long", year: new Date(ts).getFullYear() === new Date().getFullYear() ? undefined : "numeric" });
+  }
+  // energy band for a (rounded) level: 1–3 energy, 4–6 medium, 7–10 low (tired)
+  const energyOf = (v) => { const r = Math.round(v); return r <= 3 ? "I have energy" : r <= 6 ? "I feel ok" : "I'm tired"; };
+  // same bands, worded for the day average
+  const dayEnergyOf = (v) => { const r = Math.round(v); return r <= 3 ? "High energy" : r <= 6 ? "Medium energy" : "Low energy"; };
+  function dayStats(list) {
+    const m = new Map();
+    for (const e of list) {
+      const k = dayKey(e.ts), s = m.get(k) || { sum: 0, count: 0, items: [] };
+      s.sum += e.level; s.count++; s.avg = s.sum / s.count; s.items.push(e); m.set(k, s);
+    }
+    return m;
+  }
+
+  // Day chart: x runs 07:00–24:00 (earlier if an entry is before 7), y = 1–10. Line between entries.
+  function drawDayChart(g, X, Y, w, h, items, c) {
+    const first = Math.min(...items.map(e => e.ts));
+    const d0 = new Date(first), midnight = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()).getTime();
+    const start = Math.min(midnight + 7 * 36e5, Math.floor(first / 36e5) * 36e5), end = midnight + 864e5;
+    const span = end - start;
+    g.save();
+    // y labels: "1 Full of energy", "5 Okay", "10 Exhausted" — the left gutter is sized to fit them
+    const fontNum = `800 ${c.fs}px ${c.font}`, fontName = `500 ${c.fs}px ${c.font}`, sp = c.fs * 0.35;
+    const yl = [1, 5, 10].map(lv => {
+      g.font = fontNum; const nw = g.measureText(String(lv)).width;
+      g.font = fontName; const mw = g.measureText(LABELS[lv]).width;
+      return { lv, nw, mw };
+    });
+    const gutter = Math.max(...yl.map(o => o.nw + sp + o.mw)) + c.fs * 0.7;
+    const L = X + gutter, R = X + w - c.padR, T = Y + c.padT, B = Y + h - c.padB;
+    const xOf = (ts) => L + (ts - start) / span * (R - L);
+    const yOf = (lv) => B - (lv - 1) / 9 * (B - T);
+    g.textBaseline = "middle"; g.textAlign = "right";
+    // grid + labels
+    g.lineWidth = c.gw; g.setLineDash([]);
+    for (const { lv, nw } of yl) {
+      if (lv === 1) { g.strokeStyle = c.grid; g.beginPath(); g.moveTo(L, yOf(lv)); g.lineTo(R, yOf(lv)); g.stroke(); }
+      const rx = L - c.fs * 0.6;   // name first, then the number next to the line
+      g.fillStyle = c.num || c.label; g.font = fontNum; g.fillText(String(lv), rx, yOf(lv));
+      g.fillStyle = c.label; g.font = fontName; g.fillText(LABELS[lv], rx - nw - sp, yOf(lv));
+    }
+    g.font = `600 ${c.fs}px ${c.font}`;
+    // time labels: start, 12:00, 18:00, 00:00 (midnight)
+    g.textBaseline = "top"; g.fillStyle = c.label;
+    const ly = B + c.fs * 0.5;
+    g.textAlign = "left"; g.fillText(fmtTime(new Date(start)), L - c.fs * 0.3, ly);
+    g.textAlign = "right"; g.fillText("00:00", R + c.fs * 0.3, ly);
+    g.textAlign = "center";
+    for (const hr of [12, 18]) {
+      const x = xOf(midnight + hr * 36e5);
+      g.fillText(hr + ":00", x, ly);
+    }
+    const pts = [...items].sort((a, b) => a.ts - b.ts).map(e => [xOf(e.ts), yOf(e.level), e.level, e.ts]);
+    const now = Date.now(), isToday = now >= midnight && now < end;
+    const p0 = pts[0], pN = pts[pts.length - 1], stop = isToday ? now : end;   // today: stop at the current time
+    g.lineCap = "round"; g.lineJoin = "round"; g.strokeStyle = c.line;
+    // dashed where there is no data: from the chart start to the first entry, from the last entry to 24:00 (or now, today)
+    g.lineWidth = c.lw * 0.75; g.globalAlpha = 0.55; g.setLineDash([c.dash, c.dash * 1.1]);
+    g.beginPath(); g.moveTo(L, p0[1]); g.lineTo(p0[0], p0[1]);
+    if (stop > pN[3]) { g.moveTo(pN[0], pN[1]); g.lineTo(xOf(stop), pN[1]); }
+    g.stroke();
+    // solid between entries
+    g.globalAlpha = 1; g.setLineDash([]); g.lineWidth = c.lw;
+    if (pts.length > 1) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); }
+    // today: a see-through ball marks "now", at the last entry's level
+    if (isToday && now > pN[3]) {
+      g.beginPath(); g.arc(xOf(now), pN[1], c.r, 0, Math.PI * 2);
+      g.globalAlpha = 0.55; g.fillStyle = "#ffffff"; g.fill();
+      g.globalAlpha = 0.6; g.lineWidth = c.r * 0.3; g.strokeStyle = c.line; g.stroke();   // faint outline so it shows on white paper too
+      g.globalAlpha = 1;
+    }
+    // points
+    for (const [x, y, lv] of pts) {
+      g.beginPath(); g.arc(x, y, c.r, 0, Math.PI * 2);
+      g.fillStyle = LEVEL_HEX[Math.min(10, Math.max(1, lv))]; g.fill();
+      g.lineWidth = c.r * 0.45; g.strokeStyle = c.ring; g.stroke();
+    }
+    g.restore();
+  }
+  function drawAppChart(canvas, items) {
+    const cs = getComputedStyle(document.documentElement), v = (n) => cs.getPropertyValue(n).trim();
+    const w = canvas.clientWidth || canvas.parentElement.clientWidth, h = 110, dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    const g = canvas.getContext("2d"); g.scale(dpr, dpr);
+    drawDayChart(g, 0, 0, w, h, items, {
+      padL: 26, padR: 10, padT: 10, padB: 26, fs: 11, gw: 1, lw: 2.5, r: 5, dash: 4,
+      font: v("--font"), grid: v("--line"), label: v("--muted"), num: v("--fg"), line: v("--accent-fg"), ring: v("--card-solid"),
+    });
+  }
+  // ---- top: headline, "Today" tile, "This week" tile ----
+  const lvlVar = (v) => `var(--s${Math.min(10, Math.max(1, Math.round(v)))})`;
+  function renderSummary() {
+    const days = dayStats(entries), now = Date.now(), t = days.get(dayKey(now));
+    const h1 = $("headline"); h1.textContent = "";
+    const second = document.createElement("span");
+    if (t) {
+      const r = Math.round(t.avg);
+      h1.append(r <= 3 ? "You have energy," : r <= 6 ? "You feel okay," : "You're tired,");
+      second.textContent = dayEnergyOf(t.avg).toLowerCase() + " today.";
+      const last = t.items.reduce((a, b) => (b.ts > a.ts ? b : a));
+      $("todayAvg").firstChild.textContent = t.avg.toFixed(1);
+      $("todayCount").textContent = `${t.count} check-in${t.count === 1 ? "" : "s"}`;
+      const pct = ((t.avg - 1) / 9 * 100).toFixed(1) + "%";
+      $("todayFill").style.width = pct; $("todayKnob").style.left = pct; $("todayKnob").hidden = false;
+      $("todayFoot").textContent = `Last at ${fmtTime(new Date(last.ts))}`;
+    } else {
+      h1.append("How are you");
+      second.textContent = "feeling right now?";
+      $("todayAvg").firstChild.textContent = "–";
+      $("todayCount").textContent = "No check-ins";
+      $("todayFill").style.width = "0"; $("todayKnob").hidden = true;
+      $("todayFoot").textContent = "No check-ins yet today";
+    }
+    h1.appendChild(second);
+
+    // last 7 days, today on the right; bar height and color follow that day's average
+    const bars = $("weekBars"); bars.textContent = "";
+    const d0 = new Date(); let sum = 0, n = 0;
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() - i);
+      const st = days.get(dayKey(d.getTime()));
+      const col = document.createElement("div"); col.className = "bar" + (i === 0 ? " now" : "");
+      const b = document.createElement("i");
+      if (st) { b.style.height = (12 + (st.avg - 1) / 9 * 88) + "%"; b.style.setProperty("--c", lvlVar(st.avg)); sum += st.sum; n += st.count; }
+      const s = document.createElement("span"); s.textContent = d.toLocaleDateString(LOC, { weekday: "narrow" });
+      col.title = `${d.toLocaleDateString(LOC, { weekday: "long" })}: ${st ? st.avg.toFixed(1) : "no check-ins"}`;
+      col.append(b, s); bars.appendChild(col);
+    }
+    bars.setAttribute("aria-label", "Last 7 days: " + [...bars.children].map(c => c.title).join(", "));
+    $("weekAvg").firstChild.textContent = n ? (sum / n).toFixed(1) : "–";
+
+    renderInsights();
+  }
+
+  // ---- insights: last 7 days by time of day, place and feeling ----
+  function hrows(boxId, rows, emptyText) {
+    const box = $(boxId); box.textContent = "";
+    box.closest("section").hidden = !rows.length;
+    if (!rows.length) return;
+    for (const r of rows) {
+      const row = document.createElement("div"); row.className = "hrow";
+      const name = document.createElement("span"); name.textContent = r.label;
+      const sm = document.createElement("small"); sm.textContent = r.sub; name.appendChild(sm);
+      const bar = document.createElement("div"); bar.className = "hbar";
+      const fill = document.createElement("i"); fill.style.width = r.pct + "%"; fill.style.setProperty("--c", lvlVar(r.avg)); bar.appendChild(fill);
+      const val = document.createElement("b"); val.textContent = r.value;
+      row.setAttribute("aria-label", `${r.label}: ${r.aria}`);
+      row.append(name, bar, val); box.appendChild(row);
+    }
+  }
+  function renderInsights() {
+    const d0 = new Date(), since = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate() - 6).getTime();
+    const week = entries.filter(e => e.ts >= since);
+    const group = (keyOf) => {
+      const m = new Map();
+      for (const e of week) for (const k of [].concat(keyOf(e)).filter(Boolean)) {
+        const g = m.get(k) || { sum: 0, n: 0 }; g.sum += e.level; g.n++; m.set(k, g);
+      }
+      return m;
+    };
+    const avgRow = (label, g) => ({ label, avg: g.sum / g.n, pct: ((g.sum / g.n) / 10) * 100,
+      value: (g.sum / g.n).toFixed(1), sub: `${g.n} check-in${g.n === 1 ? "" : "s"}`,
+      aria: `average ${(g.sum / g.n).toFixed(1)} from ${g.n} check-ins` });
+    const none = "No check-ins in the last 7 days yet";
+
+    const part = (e) => { const h = new Date(e.ts).getHours(); return h >= 5 && h < 12 ? "Morning" : h >= 12 && h < 17 ? "Afternoon" : h >= 17 ? "Evening" : "Night"; };
+    const tm = group(part);
+    hrows("byTime", ["Morning", "Afternoon", "Evening", "Night"].filter(k => tm.has(k)).map(k => avgRow(k, tm.get(k))), none);
+
+    const pm = group(e => e.place);
+    hrows("byPlace", [...pm].sort((a, b) => b[1].n - a[1].n).map(([k, g]) => avgRow(k, g)),
+      week.length ? "No places chosen in the last 7 days" : none);
+
+    // feelings: how often, bar length = share of check-ins, color = average tiredness when felt
+    const fm = group(e => e.feels);
+    hrows("byFeel", [...fm].sort((a, b) => b[1].n - a[1].n).map(([k, g]) => ({
+      label: k, avg: g.sum / g.n, pct: (g.n / week.length) * 100, value: g.n + "×",
+      sub: `avg ${(g.sum / g.n).toFixed(1)} when felt`, aria: `${g.n} times, average tiredness ${(g.sum / g.n).toFixed(1)}`,
+    })), week.length ? "No feelings chosen in the last 7 days" : none);
+  }
+
+  // a day's heading (name, count, average, energy) followed by its line chart
+  function dayBlock(parent, ts, st, fold) {
+    const h = document.createElement("div"); h.className = "day";
+    const nm = document.createElement("span"); nm.className = "day-name"; nm.textContent = dayLabel(ts);
+    const av = document.createElement("span"); av.className = "day-avg";
+    const b = document.createElement("b"); b.textContent = st.avg.toFixed(1);
+    b.style.setProperty("--c", lvlVar(st.avg));
+    const en = document.createElement("span"); en.className = "energy"; en.textContent = dayEnergyOf(st.avg);
+    av.append(`${st.count} ${st.count === 1 ? "entry" : "entries"} · avg`, b, en);
+    h.append(nm, av);
+    if (fold) { const sm = document.createElement("summary"); sm.appendChild(h); parent.appendChild(sm); } else parent.appendChild(h);
+    const cv = document.createElement("canvas"); cv.className = "day-chart";
+    cv.setAttribute("role", "img");
+    cv.setAttribute("aria-label", `Tiredness through the day: ${[...st.items].sort((a, b) => a.ts - b.ts).map(x => fmtTime(new Date(x.ts)) + " " + x.level).join(", ")}`);
+    parent.appendChild(cv);
+    if (!fold || parent.open) drawAppChart(cv, st.items);
+  }
+  let openDays = null;   // history days unfolded in Insights; today starts open
+
+  function render() {
+    const list = $("list"), todayList = $("todayList"), todayK = dayKey(Date.now());
+    list.textContent = ""; todayList.textContent = "";
+    $("exportPdf").disabled = $("exportCsv").disabled = !entries.length;
+    renderSummary();
+    $("stat").textContent = entries.length ? `${entries.length} total` : "";
+    if (!entries.length) list.innerHTML = '<div class="empty"><b>No entries yet</b>Your saved check-ins will show up here, newest first.</div>';
+    if (entries.every(e => dayKey(e.ts) !== todayK)) {
+      const h = document.createElement("div"); h.className = "day"; h.innerHTML = '<span class="day-name">Today</span>';
+      const p = document.createElement("p"); p.className = "hempty"; p.textContent = "No check-ins yet today. Your line for the day starts with the first one.";
+      todayList.append(h, p);
+    }
+    const days = dayStats(entries);
+    // today appears twice: on the check-in page and at the top of the full history in Insights
+    const passes = [[todayList, entries.filter(e => dayKey(e.ts) === todayK)], [list, entries]];
+    if (!openDays) openDays = new Set([todayK]);
+    for (const [target, items] of passes) {
+    let lastDay = "", box = target;
+    for (const e of items) {
+      const k = dayKey(e.ts);
+      if (k !== lastDay) {
+        lastDay = k;
+        if (target === list) {
+          const det = document.createElement("details"); det.className = "day-fold"; det.open = openDays.has(k);
+          det.addEventListener("toggle", () => {
+            if (det.open) { openDays.add(k); drawAppChart(det.querySelector("canvas"), days.get(k).items); } else openDays.delete(k);
+          });
+          list.appendChild(det); box = det;
+          dayBlock(det, e.ts, days.get(k), true);
+        } else dayBlock(target, e.ts, days.get(k));
+      }
+      const row = document.createElement("article"); row.className = "entry" + (editingId === e.id ? " is-editing" : "");
+      const lv = document.createElement("div"); lv.className = "lvl";
+      const n = document.createElement("div"); n.className = "num"; n.textContent = e.level;
+      n.style.setProperty("--c", `var(--s${Math.min(10, Math.max(1, e.level))})`);
+      const nl = document.createElement("div"); nl.className = "num-label"; nl.textContent = LABELS[Math.min(10, Math.max(1, e.level))];
+      lv.append(n, nl);
+      const body = document.createElement("div"); body.className = "body";
+      const meta = document.createElement("div"); meta.className = "meta";
+      const t = document.createElement("b"); t.textContent = fmtTime(new Date(e.ts));
+      const d = document.createElement("span"); d.textContent = fmtNumDate(new Date(e.ts));
+      const del = document.createElement("button"); del.className = "del"; del.type = "button";
+      if (confirmId === e.id) { del.textContent = "Tap to delete"; del.classList.add("really"); }
+      else del.textContent = "Delete";
+      del.addEventListener("click", async () => {
+        if (confirmId !== e.id) { confirmId = e.id; render(); setTimeout(() => { if (confirmId === e.id) { confirmId = null; render(); } }, 4000); return; }
+        confirmId = null;
+        if (editingId === e.id) resetForm();
+        try { await store.remove(e.id); } catch (err) { showHint("Couldn't delete that entry. Try again.", "err"); }
+      });
+      const edit = document.createElement("button"); edit.className = "edit"; edit.type = "button"; edit.textContent = "Edit";
+      edit.addEventListener("click", () => startEdit(e));
+      meta.append(t, d, edit, del);
+      body.append(meta);
+      if (e.feels.length || e.place) {
+        const tags = document.createElement("div"); tags.className = "tags";
+        if (e.place) {
+          const s = document.createElement("span"); s.className = "tag place";
+          s.innerHTML = PLACE_ICONS[e.place] || PIN_ICON;
+          s.append(e.place); s.setAttribute("aria-label", "At " + e.place);
+          tags.appendChild(s);
+        }
+        if (e.feels.length) { const s = document.createElement("span"); s.className = "feel-text"; s.textContent = e.feels.join(" · "); tags.appendChild(s); }
+        body.appendChild(tags);
+      }
+      const field = (label, text) => {
+        const p = document.createElement("p"); p.className = "field";
+        const s = document.createElement("small"); s.textContent = label;
+        p.append(s, document.createTextNode(text)); body.appendChild(p);
+      };
+      if (e.did) field("What I did", e.did);
+      if (e.next) field("Plan next", e.next);
+      if (!e.did && !e.next && !e.feels.length && !e.place) {
+        const p = document.createElement("p"); p.className = "field none"; p.textContent = "No notes"; body.appendChild(p);
+      }
+      row.append(lv, body);
+      box.appendChild(row);
+    }
+    }
+  }
+  // ---- light / dark ----
+  const isLight = () => getComputedStyle(document.documentElement).colorScheme.includes("light");
+  function syncThemeButton() {
+    const light = isLight(), btn = $("themeToggle");
+    btn.setAttribute("aria-label", light ? "Switch to dark look" : "Switch to light look");
+    btn.querySelector(".moon").style.display = light ? "block" : "none";
+    btn.querySelector(".sun").style.display = light ? "none" : "block";
+  }
+  try { const saved = localStorage.getItem("look"); if (saved === "light" || saved === "dark") document.documentElement.dataset.look = saved; } catch {}
+  $("themeToggle").addEventListener("click", () => {
+    const next = isLight() ? "dark" : "light";
+    document.documentElement.dataset.look = next;
+    try { localStorage.setItem("look", next); } catch {}
+    syncThemeButton(); render();
+  });
+  syncThemeButton();
+
+  // redraw charts when the width or the light/dark theme changes
+  setInterval(() => { if (entries.length) render(); }, 60000);   // keep today's "now" marker moving
+  let resizeT;
+  addEventListener("resize", () => { clearTimeout(resizeT); resizeT = setTimeout(render, 150); });
+  try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { syncThemeButton(); render(); }); } catch {}
+  new MutationObserver(() => { syncThemeButton(); render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  function showHint(msg, cls) { hint.textContent = msg; hint.className = "hint " + (cls || ""); }
+
+  // ---- save ----
+  $("form").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (!level || !store) return;
+    // text typed in an "add your own" box but not added yet is added now; an empty box just closes
+    addFeel(); addPlace();
+    const fields = { level, feels: [...picked], did: didEl.value.trim(), next: nextEl.value.trim(), place };
+    saveBtn.disabled = true;
+    try {
+      if (editingId) {
+        const orig = entries.find(x => x.id === editingId);
+        if (!orig) { resetForm(); showHint("That entry no longer exists.", "err"); return; }
+        await store.update(editingId, { ts: orig.ts, ...fields });
+        resetForm(); render();
+        showHint("Entry updated", "ok");
+      } else {
+        const entry = { ts: Date.now(), ...fields };
+        await store.add(entry);
+        resetForm();
+        showHint(`Saved at ${fmtTime(new Date(entry.ts))}`, "ok");
+      }
+    } catch (err) {
+      saveBtn.disabled = false;
+      showHint(err && err.code === "quota_exceeded" ? "Storage is full. Delete some old entries first." : "Couldn't save. Check your connection and try again.", "err");
+    }
+  });
+
+  // ---- export ----
+  const LEVEL_HEX = ["", "#7fcfb3", "#93d2a6", "#b0d49a", "#cfd48f", "#e8cd86", "#f0bb80", "#f1a47c", "#ee8e7c", "#e6767f", "#d75f84"];
+  let downloads = null;
+  const stamp = () => { const d = new Date(); return fmtNumDate(d) + " " + fmtTime(d); };
+  const fileStamp = () => { const d = new Date(), p = (n) => String(n).padStart(2, "0"); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+  function exportHint(msg, cls) { const h = $("exportHint"); h.textContent = msg; h.className = "hint " + (cls || ""); }
+
+  async function offer(filename, blob) {
+    if (downloads) {
+      try { await downloads.save({ filename, data: blob }); exportHint(`Saved ${filename}`, "ok"); }
+      catch (err) {
+        if (err && err.code === "declined") exportHint("");
+        else if (err && err.code === "rate_limited") exportHint("A save prompt is already open. Finish that one first.", "err");
+        else exportHint("Couldn't save the file here. Try again in the Claude app or on claude.ai.", "err");
+      }
+      return;
+    }
+    // Opened outside Claude (e.g. the local file): plain browser download
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    exportHint(`Saved ${filename}`, "ok");
+  }
+
+  function buildCsv() {
+    const q = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+    const rows = [["Date", "Time", "Tiredness", "Feels like", "What I did", "What I plan next", "Where"].join(";")];
+    for (const e of [...entries].sort((a, b) => a.ts - b.ts)) {
+      const d = new Date(e.ts);
+      rows.push([fmtNumDate(d), fmtTime(d), e.level, q(e.feels.join(", ")), q(e.did), q(e.next), q(e.place)].join(";"));
+    }
+    return new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv" });
+  }
+
+  // Draws A4 pages on canvas (so any language's letters render), then wraps them in a PDF
+  async function buildPdf() {
+    try { await document.fonts.ready; } catch {}
+    const W = 1240, H = 1754, M = 96, F = '"Urbanist", "Segoe UI", system-ui, sans-serif';
+    const INK = "#111312", MUTED = "#5e6360", LINE = "#e3e4e0", ACCENT = "#26392d";
+    const colDate = M + 22, colLvl = M + 150, colText = M + 240, textW = W - M - colText;
+    const pages = [];
+    let ctx, y;
+    const newPage = () => {
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      ctx = c.getContext("2d"); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+      ctx.textBaseline = "top"; pages.push(c); y = M;
+    };
+    const wrap = (text, width) => {
+      ctx.font = `500 26px ${F}`;
+      const out = [];
+      for (const para of text.split(/\n/)) {
+        let line = "";
+        for (const word of para.split(/\s+/).filter(Boolean)) {
+          let w = word;
+          while (ctx.measureText(w).width > width) {           // break very long words
+            let i = w.length; while (i > 1 && ctx.measureText(w.slice(0, i)).width > width) i--;
+            if (line) { out.push(line); line = ""; }
+            out.push(w.slice(0, i)); w = w.slice(i);
+          }
+          const t = line ? line + " " + w : w;
+          if (ctx.measureText(t).width > width && line) { out.push(line); line = w; } else line = t;
+        }
+        out.push(line);
+      }
+      return out;
+    };
+
+    const sorted = [...entries].sort((a, b) => b.ts - a.ts);
+    const avg = sorted.reduce((s, e) => s + e.level, 0) / sorted.length;
+    const first = new Date(sorted[sorted.length - 1].ts), last = new Date(sorted[0].ts);
+
+    newPage();
+    ctx.fillStyle = INK; ctx.font = `800 56px ${F}`; ctx.fillText("Tiredness Log", M, y); y += 76;
+    ctx.fillStyle = MUTED; ctx.font = `500 24px ${F}`;
+    ctx.fillText(`${fmtNumDate(first)} – ${fmtNumDate(last)}  ·  ${sorted.length} entries  ·  average ${avg.toFixed(1)} / 10`, M, y); y += 36;
+    ctx.fillText(`Exported ${stamp()}`, M, y); y += 64;
+
+    const head = () => {
+      ctx.fillStyle = MUTED; ctx.font = `700 19px ${F}`;
+      ctx.fillText("Time", colDate, y); ctx.fillText("Level", colLvl - 6, y); ctx.fillText("Details", colText, y);
+      y += 34; ctx.fillStyle = INK; ctx.fillRect(M, y, W - 2 * M, 2); y += 22;
+    };
+    head();
+
+    // one tinted band per day: full date on the left, entry count and that day's average on the right
+    const days = dayStats(sorted);
+    ctx.textBaseline = "top";
+    const BAND_H = 76, CHART_H = 190, BOTTOM = H - M - 40;
+    const band = (ts, continued) => {
+      const st = days.get(dayKey(ts));
+      const name = new Date(ts).toLocaleDateString(LOC, { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      ctx.fillStyle = "#eef2ec";
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(M, y, W - 2 * M, BAND_H - 18, 16) : ctx.rect(M, y, W - 2 * M, BAND_H - 18); ctx.fill();
+      ctx.fillStyle = INK; ctx.font = `800 27px ${F}`; ctx.fillText(name, M + 22, y + 15);
+      if (continued) { const w = ctx.measureText(name).width; ctx.fillStyle = MUTED; ctx.font = `500 20px ${F}`; ctx.fillText("(continued)", M + 32 + w, y + 21); }
+      const pillW = 74, pillX = W - M - 14 - pillW;
+      ctx.fillStyle = LEVEL_HEX[Math.min(10, Math.max(1, Math.round(st.avg)))];
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(pillX, y + 10, pillW, 38, 12) : ctx.rect(pillX, y + 10, pillW, 38); ctx.fill();
+      ctx.fillStyle = INK; ctx.font = `800 23px ${F}`; ctx.textAlign = "center"; ctx.fillText(st.avg.toFixed(1), pillX + pillW / 2, y + 17);
+      ctx.textAlign = "right"; ctx.fillStyle = INK; ctx.font = `700 21px ${F}`;
+      const enTxt = dayEnergyOf(st.avg);
+      ctx.fillText(enTxt, pillX - 14, y + 19);
+      const enW = ctx.measureText(enTxt).width;
+      ctx.fillStyle = MUTED; ctx.font = `600 21px ${F}`;
+      ctx.fillText(`${st.count} ${st.count === 1 ? "entry" : "entries"} · day average  ·`, pillX - 22 - enW, y + 19);
+      ctx.textAlign = "left";
+      y += BAND_H;
+    };
+    let curDay = "";
+
+    for (const e of sorted) {
+      // details: a small label line, then the wrapped text, for each filled part
+      const parts = [];
+      if (e.feels.length) parts.push(["Feels like", e.feels.join(", ")]);
+      if (e.did) parts.push(["What I did", e.did]);
+      if (e.next) parts.push(["Plan next", e.next]);
+      if (e.place) parts.push(["Where", e.place]);
+      const lines = [];   // [kind, text]
+      if (!parts.length) lines.push(["muted", "No notes"]);
+      parts.forEach(([label, text], i) => {
+        if (i) lines.push(["gap", ""]);
+        lines.push(["label", label]);
+        wrap(text, textW).forEach(l => lines.push(["text", l]));
+      });
+      const LH = 36, LABEL_H = 28, GAP_H = 10;
+      const textH = lines.reduce((s, [k]) => s + (k === "label" ? LABEL_H : k === "gap" ? GAP_H : LH), 0);
+      const rowH = Math.max(112, textH) + 26;   // room for the level tile plus its energy label
+      const k = dayKey(e.ts);
+      if (k !== curDay) {
+        if (curDay) y += 18;                                        // extra air between days
+        if (y + BAND_H + CHART_H + rowH > BOTTOM) { newPage(); head(); }   // never leave a day header alone at a page end
+        band(e.ts, false); curDay = k;
+        drawDayChart(ctx, M, y, W - 2 * M, CHART_H - 20, days.get(k).items, {
+          padL: 50, padR: 24, padT: 12, padB: 40, fs: 18, gw: 1.5, lw: 4, r: 9, dash: 8,
+          font: F, grid: LINE, label: MUTED, num: INK, line: ACCENT, ring: "#ffffff",
+        });
+        y += CHART_H;
+      } else if (y + rowH > BOTTOM) { newPage(); head(); band(e.ts, true); }
+      const d = new Date(e.ts);
+      ctx.fillStyle = INK; ctx.font = `700 28px ${F}`; ctx.fillText(fmtTime(d), colDate, y + 14);
+      ctx.fillStyle = LEVEL_HEX[Math.min(10, Math.max(1, e.level))];
+      ctx.beginPath(); ctx.roundRect ? ctx.roundRect(colLvl - 6, y, 60, 60, 16) : ctx.rect(colLvl - 6, y, 60, 60); ctx.fill();
+      ctx.fillStyle = INK; ctx.font = `800 28px ${F}`; ctx.textAlign = "center";
+      ctx.fillText(String(e.level), colLvl + 24, y + 15);
+      ctx.fillStyle = MUTED; ctx.font = `700 16px ${F}`;
+      const nm = LABELS[Math.min(10, Math.max(1, e.level))];
+      const enLines = { "Full of energy": ["Full of", "energy"] }[nm] || [nm];
+      enLines.forEach((l, i) => ctx.fillText(l, colLvl + 24, y + 70 + i * 20));
+      ctx.textAlign = "left";
+      let ly = y + 4;
+      for (const [kind, text] of lines) {
+        if (kind === "gap") { ly += GAP_H; continue; }
+        if (kind === "label") { ctx.fillStyle = ACCENT; ctx.font = `700 17px ${F}`; ctx.fillText(text, colText, ly + 4); ly += LABEL_H; continue; }
+        ctx.fillStyle = kind === "muted" ? MUTED : INK; ctx.font = `500 26px ${F}`; ctx.fillText(text, colText, ly); ly += LH;
+      }
+      y += rowH; ctx.fillStyle = LINE; ctx.fillRect(M, y - 14, W - 2 * M, 1.5);
+    }
+
+    pages.forEach((c, i) => {
+      const g = c.getContext("2d");
+      g.fillStyle = MUTED; g.font = `500 20px ${F}`; g.textBaseline = "top";
+      g.fillText("Tiredness Log", M, H - M + 20);
+      g.textAlign = "right"; g.fillText(`Page ${i + 1} of ${pages.length}`, W - M, H - M + 20);
+      g.fillStyle = ACCENT; g.fillRect(M, H - M, 48, 4);
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", compress: true });
+    pages.forEach((c, i) => {
+      if (i) pdf.addPage();
+      pdf.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", 0, 0, 210, 297);
+    });
+    return pdf.output("blob");
+  }
+
+  const menu = $("exportMenu"), toggle = $("exportToggle");
+  const setMenu = (open) => { menu.hidden = !open; toggle.setAttribute("aria-expanded", String(open)); if (!open) exportHint(""); };
+  toggle.addEventListener("click", (ev) => { ev.stopPropagation(); setMenu(menu.hidden); });
+  document.addEventListener("click", (ev) => { if (!menu.hidden && !$("exportBar").contains(ev.target)) setMenu(false); });
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !menu.hidden) { setMenu(false); toggle.focus(); } });
+
+  $("exportCsv").addEventListener("click",() => offer(`tiredness-log-${fileStamp()}.csv`, buildCsv()));
+  $("exportPdf").addEventListener("click", async () => {
+    if (!window.jspdf) { exportHint("The PDF tool didn't load. Check your connection and reload.", "err"); return; }
+    const btn = $("exportPdf"); btn.disabled = true; btn.textContent = "Making PDF…";
+    try { await offer(`tiredness-log-${fileStamp()}.pdf`, await buildPdf()); }
+    catch { exportHint("Couldn't create the PDF. Try again.", "err"); }
+    finally { btn.textContent = "PDF report"; btn.disabled = !entries.length; }
+  });
+
+  // ---- storage: private cloud store when available, else this device ----
+  function useLocal() {
+    const KEY = "tiredness-entries", FKEY = "tiredness-feels", PKEY = "tiredness-places";
+    const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; } };
+    const write = (a) => { localStorage.setItem(KEY, JSON.stringify(a)); entries = a.map(norm).sort((x, y) => y.ts - x.ts); render(); };
+    try { localStorage.removeItem(FKEY); localStorage.removeItem(PKEY); } catch {}   // old saved custom options are no longer kept
+    entries = read().map(norm).sort((a, b) => b.ts - a.ts);
+    store = {
+      async add(e) { const a = read(); a.push({ ...e, id: String(e.ts) }); write(a); },
+      async update(id, e) { write(read().map(x => x.id === id ? { ...e, id } : x)); },
+      async remove(id) { write(read().filter(x => x.id !== id)); },
+    };
+    $("storeNote").textContent = "Saved on this device only.";
+    if (level) saveBtn.disabled = false;
+    render();
+  }
+
+  async function init() {
+    const c = window.claude;
+    if (!c || !c.use) { useLocal(); return; }
+    const [db, user, dl] = await Promise.all([c.use("db"), c.use("user"), c.use("downloads")]);
+    downloads = dl;
+    if (!dl) { $("exportBar").hidden = true; }
+    const uid = user ? await user.id() : null;
+    if (!db || !uid) { useLocal(); return; }
+    const col = db.collection("data/users/" + uid);
+    store = {
+      add: (e) => col.add(e),
+      update: (id, e) => col.doc(id).set(e),
+      remove: (id) => col.doc(id).delete(),
+    };
+    if (level) saveBtn.disabled = false;
+    $("storeNote").textContent = "Private to you · syncs across your devices.";
+    col.orderBy("ts", "desc").onSnapshot(
+      (snap) => {
+        entries = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => typeof e.ts === "number").map(norm);
+        if (editingId && !entries.some(e => e.id === editingId)) resetForm();
+        render();
+      },
+      () => showHint("Lost connection to your entries. Reload to reconnect.", "err")
+    );
+  }
+  init();
+})();
+</script>
